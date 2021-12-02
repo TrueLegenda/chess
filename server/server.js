@@ -1,3 +1,45 @@
+class gameManager {
+  constructor (white, black, turn, moves) {
+      this.white = white;
+      this.black = black;
+      this.turn = turn;
+      this.moves = moves;
+      this.min = {
+        white: this.white.id,
+        black: this.black.id,
+        turn: this.turn,
+        moves: this.moves
+      };
+  }
+
+  startMatch() {
+    this.white.emit('startMatch', this.min);
+    this.black.emit('startMatch', this.min);
+  }
+
+  getCurrentTurn() {
+    if (turn % 2 != -1)
+      return "white";
+    return "black";
+  }
+
+  getOpponent(player) {
+    if (player == this.white)
+      return this.black;
+    return this.white;
+  }
+
+  verifyMove(socket, move, board) {
+    // PLAYER IS WHITE
+    if (socket == this.white) {
+      if (this.turn % 2 == 0) // if turn is not white
+        return false;
+
+      
+    }
+  }
+}
+
 const express = require('express');
 const app = express();
 const http = require('http');
@@ -20,16 +62,11 @@ io.on('connection', (socket) => {
     if (queue.length > 0) {
       // create a new game
       let player2 = queue.pop();
-      games.push({
-        white: socket.id,
-        black: player2.id,
-        turn: 1,
-        moves: []
-      });
 
-      let game = games[games.length - 1];
-      startMatch(socket, player2, game);
-      console.log("Match started!");
+      // GAME MANAGER METHOD
+      game = new gameManager(socket, player2, 1, []);
+      games.push(game);
+      game.startMatch();
     } else {
       queue.push(socket);
     }
@@ -45,41 +82,18 @@ io.on('connection', (socket) => {
       queue = queue.filter(x => socket != x);
     });
 
-    socket.on('chessMove', function(move) {
+    socket.on('requestMove', function(data) {
       for (let i = 0; i < games.length; i++) {
-        if (games[i].white == socket.id || games[i].black == socket.id) {
+        if (games[i].white.id == socket.id || games[i].black.id == socket.id) {
           let game = games[i];
-          let opponent;
-          // find opponent socket
-          if (game.white == socket.id) {
-            opponent = getSocketById(game.black, connections);
-          } else {
-            opponent = getSocketById(game.white, connections);
+          let opponent = game.getOpponent(socket);
+          if (game.verifyMove(socket, data.move, data.board)) { // verify move legality
+
           }
-
-          game.turn += 1;
-          game.moves.push(move);
-
-          games[i] = game;
-
-          // emit event to opponent
-          opponent.emit('chessMove', {
-            move,
-            game
-          });
-          socket.emit('chessMove', {
-            move: null,
-            game
-          })
         }
       }
     })
 });
-
-function startMatch(white, black, gameInfo) {
-  white.emit('startMatch', gameInfo);
-  black.emit('startMatch', gameInfo);
-}
 
 function getSocketById(id, conns) {
   for (let i = 0; i < conns.length; i++) {

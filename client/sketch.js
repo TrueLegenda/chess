@@ -14,8 +14,6 @@ let Player = {
   BLACK: "black"
 };
 let gameInfo;
-let pawnsMoved = new Array(8).fill(false);
-let possibleMoves = [];
 
 // connectivity
 let port = 19280;
@@ -85,10 +83,10 @@ function setup() {
 }
 
 function draw() {
-  background(210, 210, 210);
+  background('#769656');
 
   // draw board
-  fill(149, 69, 53);
+  fill('#eeeed2');
   rectMode(CORNER);
   noStroke();
 
@@ -172,10 +170,6 @@ function applyBoardNotation(fen) {
   board = fenToMatrix(fen);
 }
 
-function myTurn() {
-  return ((character == Player.WHITE && gameInfo.turn % 2 != 0) || (character == Player.BLACK && gameInfo.turn % 2 == 0));
-}
-
 function verifyBoundaries() {
   return !(mouseX < 0 || mouseX > size || mouseY < 0 || mouseY > size);
 }
@@ -187,31 +181,6 @@ function getIndexOnMouse() {
   return [x, y];
 }
 
-function getAvailableMoves(piece, index) {
-  // exit condition - piece is not of player color
-  if (piece == -1 || (character == Player.BLACK && piece < 5) || (character == Player.WHITE && piece > 5))
-    return;
-
-  let availableMoves = [];
-
-  // WHITE
-  if (character == Player.WHITE) {
-    // PAWN
-    if (piece == Piece.P) {
-      // MOVEMENT FOR PAWN - REGULAR MOVES
-      if (!pawnsMoved[index[0]]) { // if pawn hasn't moved yet
-        if (board[index[1] - 2][index[0]] == -1) {
-          availableMoves.push([index[1] - 2, index[0]]);
-        }
-      }
-      if (board[index[1] - 1][index[0]] == -1) {
-        availableMoves.push([index[1] - 1, index[0]]);
-      }
-    }
-  }
-  return availableMoves;
-}
-
 function mousePressed() {
   // check boundaries
   if (!verifyBoundaries())
@@ -219,16 +188,10 @@ function mousePressed() {
 
   let indexX = getIndexOnMouse()[0]; let indexY = getIndexOnMouse()[1];
 
+  // get clicked piece information (piece, pos)
   if (board[indexY][indexX] != -1) {
     mousePositionOnClick[0] = mouseX; mousePositionOnClick[1] = mouseY;
     clickedPieceIndex[0] = indexX; clickedPieceIndex[1] = indexY;
-  }
-
-  // select piece
-  if (myTurn()) {
-    let index = getIndexOnMouse();
-    let piece = board[index[1]][index[0]];
-    possibleMoves = getAvailableMoves(piece, index);
   }
 }
 
@@ -238,18 +201,14 @@ function mouseReleased() {
     piece = board[clickedPieceIndex[1]][clickedPieceIndex[0]];
     let move = [getIndexOnMouse()[1], getIndexOnMouse()[0]];
     
-    if (ArrayContainsList(possibleMoves, move)) {
-      applyMove(piece, clickedPieceIndex, move);
-    }
+    requestMove(piece, clickedPieceIndex, move);
   }
 
   // reset variables
   clickedPieceIndex.fill(-1);
-  possibleMoves = [];
 }
 
-function applyMove(piece, oldIndex, newIndex) {
-  // save move as phrase
+function moveToStr(piece, oldIndex, newIndex) {
   let move = "";
   move += piece.toString() + oldIndex[1].toString() + oldIndex[0].toString();
   if (board[newIndex[0]][newIndex[1]] != -1)
@@ -257,18 +216,19 @@ function applyMove(piece, oldIndex, newIndex) {
   else 
     move += '-';
   move += newIndex[0].toString() + newIndex[1].toString();
-  console.log(move);
 
-  // apply move to board
-  board[newIndex[0]][newIndex[1]] = piece;
-  board[oldIndex[1]][oldIndex[0]] = -1;
+  return move;
+}
 
-  if (piece == Piece.P || piece == Piece.p) {
-    pawnsMoved[oldIndex[0]] = true;
-  }
+function requestMove(piece, oldIndex, newIndex) {
+  // save move as phrase
+  let move = moveToStr(piece, oldIndex, newIndex);
 
   // report to server
-  socket.emit('chessMove', move);
+  socket.emit('requestMove', {
+    move,
+    board
+  });
 }
 
 function pieceIsOfColor(piece, color) {
