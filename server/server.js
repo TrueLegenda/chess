@@ -29,11 +29,15 @@ class gameManager {
     return this.white;
   }
 
-  verifyMove(socket, move, board) {
+  verifyMove(socket, moveStr, board) {
+    // variables
+    let move = strToMove(moveStr);
+
     // PLAYER IS WHITE
     if (socket == this.white) {
-      if (this.turn % 2 == 0) // if turn is not white
+      if (this.turn % 2 == 0) {// if turn is not white
         return false;
+      }
 
       
     }
@@ -107,3 +111,39 @@ function getSocketById(id, conns) {
 server.listen(port, () => {
     console.log(`listening on *:${port}`);
 });
+
+function strToMove(str) {
+  let move = {
+    piece: -1,
+    oldIndex: [],
+    newIndex: [],
+    eatMove: false,
+    eatenPiece: -1
+  };
+   // example str = 4/7/3/x/11/0/4
+  let spaces = 0;
+  if (str[1] != '/') {
+    move.piece = parseInt(str[0] + str[1]);
+    spaces++;
+  } else {
+    move.piece = parseInt(str[0]);
+  }
+  move.oldIndex = [parseInt(str[2 + spaces]), parseInt(str[4 + spaces])];
+  if (str[6 + spaces] == 'x') { // if eat move
+    move.eatMove = true;
+  }
+  if (move.eatMove) {
+    if (str[9 + spaces] != '/') {
+      move.eatenPiece = parseInt(str[8 + spaces] + str[9 + spaces]);
+      spaces++;
+    } else {
+      move.eatenPiece = parseInt(str[8 + spaces]);
+    }
+
+    move.newIndex = [parseInt(str[10 + spaces]), parseInt(str[12 + spaces])];
+  } else {
+    move.newIndex = [parseInt(str[8 + spaces]), parseInt(str[10 + spaces])];
+  }
+
+  return move;
+}
