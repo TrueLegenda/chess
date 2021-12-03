@@ -4,17 +4,21 @@ class gameManager {
       this.black = black;
       this.turn = turn;
       this.moves = moves;
+      this.board = fenToMatrix(startingPosition);;
       this.min = {
         white: this.white.id,
         black: this.black.id,
         turn: this.turn,
-        moves: this.moves
+        moves: this.moves,
+        board: this.board
       };
   }
 
   startMatch() {
     this.white.emit('startMatch', this.min);
     this.black.emit('startMatch', this.min);
+
+    console.log('Starting a match!');
   }
 
   getCurrentTurn() {
@@ -81,6 +85,21 @@ let port = 19280;
 let connections = [];
 let queue = [];
 let games = [];
+let Piece = {
+  P: 0,
+  B: 1,
+  N: 2,
+  R: 3,
+  Q: 4,
+  K: 5,
+  p: 6,
+  b: 7,
+  n: 8,
+  r: 9,
+  q: 10,
+  k: 11
+};
+let startingPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
 
 io.on('connection', (socket) => {
     console.log('new connection: ' + socket.id);
@@ -176,4 +195,32 @@ function getFlippedMove(move) {
   move.newIndex[0] = 7 - move.newIndex[0];
 
   return move;
+}
+
+function fenToMatrix(fen) {
+  let matrix = Array(8).fill(null).map(() => Array(8).fill(0));
+  let y = 0; let x = 0;
+
+  // iterate through FEN string
+  for (let i = 0; i < fen.length; i++) {
+    if (fen[i] == '/') {
+      y += 1; x = 0;
+    } else if (/^\d+$/.test(fen[i])) { // if char is a number
+      let n = parseInt(fen[i]); 
+      while (n > 0) {
+        matrix[y][x] = -1;
+        x++;
+        n--;
+      }
+    } else {
+      for (let key in Piece) {
+        if (key == fen[i]) {
+          matrix[y][x] = Piece[key];
+          x++;
+        }
+      }
+    }
+  }
+
+  return matrix;
 }

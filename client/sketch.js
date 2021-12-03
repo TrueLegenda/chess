@@ -1,9 +1,6 @@
 let size;
 let pieces = [];
-let whiteStartingPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"; // rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR
-let blackStartingPosition = "RNBQKBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbqkbnr";
-let startingPosition = whiteStartingPosition;
-let board;
+let board = [];
 let Piece;
 let mousePositionOnClick = new Array(2).fill(0);
 let clickedPieceIndex = new Array(2).fill(-1);
@@ -20,14 +17,13 @@ let port = 19280;
 let socket = io(`http://localhost:${port}`);
 // determine player color
 socket.on('startMatch', (data) => {
-  gameInfo = data;
 
-  if (socket.id == gameInfo.white) {
+  if (socket.id == data.white) {
     character = Player.WHITE;
-    applyBoardNotation(whiteStartingPosition);
+    board = data.board;
   } else {
     character = Player.BLACK;
-    applyBoardNotation(blackStartingPosition);
+    board = data.board.reverse();
   }
 
   console.log("you are playing as " + character);
@@ -79,7 +75,6 @@ function setup() {
     centered: "Centered",
     mousePoint: "Mouse Point"
   };
-  applyBoardNotation(startingPosition);
 }
 
 function draw() {
@@ -110,34 +105,6 @@ function draw() {
   }
 }
 
-function fenToMatrix(fen) {
-  let matrix = Array(8).fill(null).map(() => Array(8).fill(0));
-  let y = 0; let x = 0;
-
-  // iterate through FEN string
-  for (let i = 0; i < fen.length; i++) {
-    if (fen[i] == '/') {
-      y += 1; x = 0;
-    } else if (/^\d+$/.test(fen[i])) { // if char is a number
-      let n = parseInt(fen[i]); 
-      while (n > 0) {
-        matrix[y][x] = -1;
-        x++;
-        n--;
-      }
-    } else {
-      for (let key in Piece) {
-        if (key == fen[i]) {
-          matrix[y][x] = Piece[key];
-          x++;
-        }
-      }
-    }
-  }
-
-  return matrix;
-}
-
 function displayPiece(piece, posX, posY, setting) {
   if (piece == -1)
     return;
@@ -164,10 +131,6 @@ function displayPieces(matrix) {
       displayPiece(matrix[j][i], i, j, imageSetting.centered);
     }
   }
-}
-
-function applyBoardNotation(fen) {
-  board = fenToMatrix(fen);
 }
 
 function verifyBoundaries() {
