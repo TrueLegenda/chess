@@ -199,9 +199,9 @@ function mouseReleased() {
   let piece;
   if (clickedPieceIndex[0] != -1) {
     piece = board[clickedPieceIndex[1]][clickedPieceIndex[0]];
-    let move = [getIndexOnMouse()[1], getIndexOnMouse()[0]];
+    let pos = [getIndexOnMouse()[1], getIndexOnMouse()[0]];
     
-    requestMove(piece, clickedPieceIndex, move);
+    requestMove(piece, clickedPieceIndex, pos);
   }
 
   // reset variables
@@ -210,12 +210,12 @@ function mouseReleased() {
 
 function moveToStr(piece, oldIndex, newIndex) {
   let move = "";
-  move += piece.toString() + oldIndex[1].toString() + oldIndex[0].toString();
+  move += piece.toString() + "/" + oldIndex[1].toString() + "/" + oldIndex[0].toString() + "/";
   if (board[newIndex[0]][newIndex[1]] != -1)
-    move += 'x' + board[newIndex[0]][newIndex[1]].toString();
+    move += 'x' + "/" + board[newIndex[0]][newIndex[1]].toString() + "/";
   else 
-    move += '-';
-  move += newIndex[0].toString() + newIndex[1].toString();
+    move += '-' + "/";
+  move += newIndex[0].toString() + "/" + newIndex[1].toString();
 
   return move;
 }
@@ -223,12 +223,9 @@ function moveToStr(piece, oldIndex, newIndex) {
 function requestMove(piece, oldIndex, newIndex) {
   // save move as phrase
   let move = moveToStr(piece, oldIndex, newIndex);
-
+  console.log(move);
   // report to server
-  socket.emit('requestMove', {
-    move,
-    board
-  });
+  socket.emit('requestMove', move);
 }
 
 function pieceIsOfColor(piece, color) {
@@ -244,15 +241,19 @@ function ArrayContainsList(array, list) {
 }
 
 function parseMoveToBoard(move) {
-  let piece = parseInt(move[0]);
-  let initX = parseInt(move[2]); let newX = parseInt(move[move.length - 1]);
-  let initY = parseInt(move[1]); let newY = parseInt(move[move.length - 2]);
+  /* move example
+{
+  piece: 0,
+  oldIndex: [ 6, 4 ],
+  newIndex: [ 4, 4 ],
+  eatMove: false,
+  eatenPiece: -1
+}
+  */
 
-  matrix = board;
-  matrix[7 - initY][initX] = -1; matrix[7 - newY][newX] = piece;
+  let matrix = board;
+  matrix[move.oldIndex[0]][move.oldIndex[1]] = -1;
+  matrix[move.newIndex[0]][move.newIndex[1]] = move.piece;
 
   return matrix;
 }
-// ISSUES TO FIX FIRST:
- // 1 - array out of bounds error when selecting edge pieces
- // 2 - client crashes when selecting an enemy piece

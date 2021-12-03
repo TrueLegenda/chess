@@ -29,9 +29,10 @@ class gameManager {
     return this.white;
   }
 
-  verifyMove(socket, moveStr, board) {
+  verifyMove(socket, moveStr) {
     // variables
     let move = strToMove(moveStr);
+    console.log(move);
 
     // PLAYER IS WHITE
     if (socket == this.white) {
@@ -39,8 +40,31 @@ class gameManager {
         return false;
       }
 
-      
+      return true;      
     }
+    // PLAYER IS BLACK
+    else {
+      if (this.turn % 2 != 0) {// if turn is not white
+        return false;
+      }
+
+      return true;
+    }
+  }
+
+  doMove(socket, moveStr) {
+    this.turn++;
+    this.moves.push(moveStr);
+
+    // report move
+    socket.emit('chessMove', {
+      move: strToMove(moveStr),
+      game: this.min
+    });
+    this.getOpponent(socket).emit('chessMove', {
+      move: getFlippedMove(strToMove(moveStr)),
+      game: this.min
+    })
   }
 }
 
@@ -86,13 +110,12 @@ io.on('connection', (socket) => {
       queue = queue.filter(x => socket != x);
     });
 
-    socket.on('requestMove', function(data) {
+    socket.on('requestMove', function(move) {
       for (let i = 0; i < games.length; i++) {
         if (games[i].white.id == socket.id || games[i].black.id == socket.id) {
           let game = games[i];
-          let opponent = game.getOpponent(socket);
-          if (game.verifyMove(socket, data.move, data.board)) { // verify move legality
-
+          if (game.verifyMove(socket, move)) { // verify move legality
+            game.doMove(socket, move);
           }
         }
       }
@@ -144,6 +167,13 @@ function strToMove(str) {
   } else {
     move.newIndex = [parseInt(str[8 + spaces]), parseInt(str[10 + spaces])];
   }
+
+  return move;
+}
+
+function getFlippedMove(move) {
+  move.oldIndex[0] = 7 - move.oldIndex[0];
+  move.newIndex[0] = 7 - move.newIndex[0];
 
   return move;
 }
