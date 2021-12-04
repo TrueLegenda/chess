@@ -5,8 +5,6 @@ class gameManager {
       this.turn = turn;
       this.moves = moves;
       this.board = [];
-      this.whitePawnsMoved = new Array(8).fill(false);
-      this.blackPawnsMoved = new Array(8).fill(false);
   }
 
   startMatch() {
@@ -48,13 +46,11 @@ class gameManager {
       if (getPieceColor(move.piece) != 'white')
         return false;
 
-      if (move.piece == 0) {
+        // PAWN
+      if (move.piece == Piece.P) {
         availableMoves = this.getPawnMoves(move.piece, move.oldIndex);
         console.log(availableMoves); // TESTING PURPOSES
         if (arrayContainsList(availableMoves, move.newIndex)) {
-          if (move.oldIndex[0] - move.newIndex[0] == 2) {
-            this.whitePawnsMoved[move.oldIndex[1]] = true;
-          }
           return true;
         }
       }
@@ -69,7 +65,16 @@ class gameManager {
       if (getPieceColor(move.piece) != 'black')
         return false;
 
-      return true;
+        // PAWN
+        if (move.piece == Piece.p) { 
+          availableMoves = this.getPawnMoves(move.piece, move.oldIndex);
+          console.log(availableMoves); // TESTING PURPOSES
+          if (arrayContainsList(availableMoves, move.newIndex)) {
+            return true;
+          }
+        }
+
+      return false;
     }
   }
 
@@ -109,24 +114,44 @@ class gameManager {
   getPawnMoves(piece, index) {
     let y = index[0]; let x = index[1];
     let moves = [];
+    let board = this.board.slice();
 
+    // jump 2 squares
     if (getPieceColor(piece) == 'white') {
       // if pawn hasn't been moved yet and can jump 2
-      if (!this.whitePawnsMoved[x]) {
+      if (this.board[6][x] == Piece.P && y == 6) {
         if (this.board[y - 2][x] == -1) {
           moves.push([y - 2, x]);
         }
       }
-    } else {
-      if (!this.blackPawnsMoved[x]) {
-        if (this.board[y - 2][x] == -1) {
+    } else if (getPieceColor(piece) == 'black') {
+      board.reverse();
+      console.log(board[6]);
+      if (board[6][x] == Piece.p && y == 6) {
+        if (board[y - 2][x] == -1) {
           moves.push([y - 2, x]);
         }
       }
     }
 
-    if (this.board[y - 1][x] == -1) {
+    // normal move
+    if (board[y - 1][x] == -1) {
       moves.push([y - 1, x]);
+    }
+
+    // eat move (while checking for board borders)
+    if (y > 0) {
+      if (x > 0) {
+        if (getPieceColor(board[y - 1][x - 1]) != getPieceColor(piece) && getPieceColor(board[y - 1][x - 1]) != null) {
+          moves.push([y - 1, x - 1]);
+        }
+      }
+      
+      if (x < 7) {
+        if (getPieceColor(board[y - 1][x + 1]) != getPieceColor(piece) && getPieceColor(board[y - 1][x + 1]) != null) {
+          moves.push([y - 1, x + 1]);
+        }
+      }
     }
 
     return moves;
@@ -289,10 +314,12 @@ function addMoveToBoard(board, move) {
 }
 
 function getPieceColor(piece) {
-  if (piece < 6)
+  if (piece < 0)
+    return null;
+  else if (piece < 6)
     return 'white';
-  
-  return 'black';
+  else
+    return 'black';
 }
 
 function arraysEqual(arr1, arr2) {
@@ -307,7 +334,7 @@ function arraysEqual(arr1, arr2) {
   return true;
 }
 
-function arrayContainsList(arr, list) { // example input: {[0, 0], [1, 1], [2, 2]}, [1, 1]
+function arrayContainsList(arr, list) {
   for (let i = 0; i < arr.length; i++) {
     if (arraysEqual(arr[i], list))
       return true;
