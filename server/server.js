@@ -4,19 +4,16 @@ class gameManager {
       this.black = black;
       this.turn = turn;
       this.moves = moves;
-      this.board = fenToMatrix(startingPosition);;
-      this.min = {
-        white: this.white.id,
-        black: this.black.id,
-        turn: this.turn,
-        moves: this.moves,
-        board: this.board
-      };
+      this.board = [];
+      this.whitePawnsMoved = new Array(8).fill(false);
+      this.blackPawnsMoved = new Array(8).fill(false);
   }
 
   startMatch() {
-    this.white.emit('startMatch', this.min);
-    this.black.emit('startMatch', this.min);
+    this.board = fenToMatrix(startingPosition);
+
+    this.white.emit('startMatch', this.getMin());
+    this.black.emit('startMatch', this.getMin());
 
     console.log('Starting a match!');
   }
@@ -36,21 +33,41 @@ class gameManager {
   verifyMove(socket, moveStr) {
     // variables
     let move = strToMove(moveStr);
-    console.log(move);
+
+    // no actual movement
+    if (arraysEqual(move.oldIndex, move.newIndex))
+      return false;
+
+    let availableMoves = [];
 
     // PLAYER IS WHITE
     if (socket == this.white) {
-      if (this.turn % 2 == 0) {// if turn is not white
+      if (this.turn % 2 == 0) { // if turn is not white
         return false;
       }
+      if (getPieceColor(move.piece) != 'white')
+        return false;
 
-      return true;      
+      if (move.piece == 0) {
+        availableMoves = this.getPawnMoves(move.piece, move.oldIndex);
+        console.log(availableMoves); // TESTING PURPOSES
+        if (arrayContainsList(availableMoves, move.newIndex)) {
+          if (move.oldIndex[0] - move.newIndex[0] == 2) {
+            this.whitePawnsMoved[move.oldIndex[1]] = true;
+          }
+          return true;
+        }
+      }
+
+      return false;      
     }
     // PLAYER IS BLACK
     else {
-      if (this.turn % 2 != 0) {// if turn is not white
+      if (this.turn % 2 != 0) {// if turn is not black
         return false;
       }
+      if (getPieceColor(move.piece) != 'black')
+        return false;
 
       return true;
     }
@@ -60,21 +77,66 @@ class gameManager {
     this.turn++;
     this.moves.push(moveStr);
 
+    let socketBoard = this.board;
+
+    if (socket == this.white) {
+      socketBoard = addMoveToBoard(this.board, strToMove(moveStr));
+      this.board = socketBoard;
+    } else {
+      socketBoard = addMoveToBoard(this.board.slice().reverse(), strToMove(moveStr));
+      this.board = socketBoard.slice().reverse();
+    }
+
     // report move
     socket.emit('chessMove', {
-      move: strToMove(moveStr),
-      game: this.min
+      board: socketBoard,
     });
     this.getOpponent(socket).emit('chessMove', {
-      move: getFlippedMove(strToMove(moveStr)),
-      game: this.min
+      board: socketBoard.slice().reverse(),
     })
+  }
+
+  getMin() {
+    return {
+      white: this.white.id,
+      black: this.black.id,
+      turn: this.turn,
+      moves: this.moves,
+      board: this.board
+    };
+  }
+
+  getPawnMoves(piece, index) {
+    let y = index[0]; let x = index[1];
+    let moves = [];
+
+    if (getPieceColor(piece) == 'white') {
+      // if pawn hasn't been moved yet and can jump 2
+      if (!this.whitePawnsMoved[x]) {
+        if (this.board[y - 2][x] == -1) {
+          moves.push([y - 2, x]);
+        }
+      }
+    } else {
+      if (!this.blackPawnsMoved[x]) {
+        if (this.board[y - 2][x] == -1) {
+          moves.push([y - 2, x]);
+        }
+      }
+    }
+
+    if (this.board[y - 1][x] == -1) {
+      moves.push([y - 1, x]);
+    }
+
+    return moves;
   }
 }
 
 const express = require('express');
 const app = express();
 const http = require('http');
+const { parse } = require('path/posix');
 const server = http.createServer(app);
 const io = require('socket.io')(server, {
     cors: {
@@ -130,25 +192,18 @@ io.on('connection', (socket) => {
     });
 
     socket.on('requestMove', function(move) {
+      // fimd relevant game
       for (let i = 0; i < games.length; i++) {
         if (games[i].white.id == socket.id || games[i].black.id == socket.id) {
           let game = games[i];
-          if (game.verifyMove(socket, move)) { // verify move legality
+          // verify move legality
+          if (game.verifyMove(socket, move)) { 
             game.doMove(socket, move);
           }
         }
       }
     })
 });
-
-function getSocketById(id, conns) {
-  for (let i = 0; i < conns.length; i++) {
-    if (conns[i].id == id)
-      return conns[i];
-  }
-
-  return null;
-}
 
 server.listen(port, () => {
     console.log(`listening on *:${port}`);
@@ -223,4 +278,40 @@ function fenToMatrix(fen) {
   }
 
   return matrix;
+}
+
+function addMoveToBoard(board, move) {
+  let matrix = board;
+  matrix[move.oldIndex[0]][move.oldIndex[1]] = -1;
+  matrix[move.newIndex[0]][move.newIndex[1]] = move.piece;
+
+  return matrix;
+}
+
+function getPieceColor(piece) {
+  if (piece < 6)
+    return 'white';
+  
+  return 'black';
+}
+
+function arraysEqual(arr1, arr2) {
+  if (arr1.length != arr2.length)
+    return false;
+
+  for (let i = 0; i < arr1.length; i++) {
+    if (arr1[i] != arr2[i])
+      return false;
+  }
+
+  return true;
+}
+
+function arrayContainsList(arr, list) { // example input: {[0, 0], [1, 1], [2, 2]}, [1, 1]
+  for (let i = 0; i < arr.length; i++) {
+    if (arraysEqual(arr[i], list))
+      return true;
+  }
+
+  return false;
 }

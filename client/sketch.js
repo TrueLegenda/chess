@@ -10,7 +10,7 @@ let Player = {
   WHITE: "white",
   BLACK: "black"
 };
-let gameInfo;
+let queueGif;
 
 // connectivity
 let port = 19280;
@@ -30,12 +30,13 @@ socket.on('startMatch', (data) => {
 });
 
 socket.on('chessMove', (data) => {
-  if (data.move != null)
-    board = parseMoveToBoard(data.move);
-  gameInfo = data.game;
+  board = data.board;
 })
 
 function preload() {
+  // queue gif
+  queueGif = loadImage("https://c.tenor.com/EHDW7RwsUk0AAAAC/just-a-second-please-eric-cartman.gif");
+
   // load white pieces
   pieces.push(loadImage("https://i.imgur.com/5aAQo9B.png")); // pawn
   pieces.push(loadImage("https://i.imgur.com/Ogp0HUg.png")); // bishop
@@ -54,7 +55,7 @@ function preload() {
 }
 
 function setup() {
-  size = windowHeight - 40;
+  size = windowHeight - 70;
   createCanvas(size, size);
 
   Piece = {
@@ -78,24 +79,29 @@ function setup() {
 }
 
 function draw() {
-  background('#769656');
+  if (gameIsLive()) {
+    background('#eeeed2');
 
-  // draw board
-  fill('#eeeed2');
-  rectMode(CORNER);
-  noStroke();
+    // draw board
+    fill('#018786'); // cf6679 - nice variant
+    rectMode(CORNER);
+    noStroke();
 
-  for(let i = 0; i < 8; i++) {
-    for (let j = 0; j < 8; j++) {
-      let x = i; if (j % 2 == 1) x -= 1;
-      if (i % 2 == 1) {
-        rect(x * (size / 8), j * (size / 8), size / 8);
+    for(let i = 0; i < 8; i++) {
+      for (let j = 0; j < 8; j++) {
+        let x = i; if (j % 2 == 1) x -= 1;
+        if (i % 2 == 1) {
+          rect(x * (size / 8), j * (size / 8), size / 8);
+        }
       }
     }
-  }
 
-  // display pieces on board
-  displayPieces(board);
+    // display pieces on board
+    displayPieces(board);
+  } else {
+    imageMode(CENTER);
+    image(queueGif, size / 2, size / 2);
+  }
 
   // dragging pieces
   if (mouseIsPressed) {
@@ -145,30 +151,34 @@ function getIndexOnMouse() {
 }
 
 function mousePressed() {
-  // check boundaries
-  if (!verifyBoundaries())
-    return;
+  if (gameIsLive()) {
+    // check boundaries
+    if (!verifyBoundaries())
+      return;
 
-  let indexX = getIndexOnMouse()[0]; let indexY = getIndexOnMouse()[1];
+    let indexX = getIndexOnMouse()[0]; let indexY = getIndexOnMouse()[1];
 
-  // get clicked piece information (piece, pos)
-  if (board[indexY][indexX] != -1) {
-    mousePositionOnClick[0] = mouseX; mousePositionOnClick[1] = mouseY;
-    clickedPieceIndex[0] = indexX; clickedPieceIndex[1] = indexY;
+    // get clicked piece information (piece, pos)
+    if (board[indexY][indexX] != -1) {
+      mousePositionOnClick[0] = mouseX; mousePositionOnClick[1] = mouseY;
+      clickedPieceIndex[0] = indexX; clickedPieceIndex[1] = indexY;
+    }
   }
 }
 
 function mouseReleased() {
-  let piece;
-  if (clickedPieceIndex[0] != -1) {
-    piece = board[clickedPieceIndex[1]][clickedPieceIndex[0]];
-    let pos = [getIndexOnMouse()[1], getIndexOnMouse()[0]];
-    
-    requestMove(piece, clickedPieceIndex, pos);
-  }
+  if (gameIsLive()) {
+    let piece;
+    if (clickedPieceIndex[0] != -1) {
+      piece = board[clickedPieceIndex[1]][clickedPieceIndex[0]];
+      let pos = [getIndexOnMouse()[1], getIndexOnMouse()[0]];
+      
+      requestMove(piece, clickedPieceIndex, pos);
+    }
 
-  // reset variables
-  clickedPieceIndex.fill(-1);
+    // reset variables
+    clickedPieceIndex.fill(-1);
+  }
 }
 
 function moveToStr(piece, oldIndex, newIndex) {
@@ -186,37 +196,11 @@ function moveToStr(piece, oldIndex, newIndex) {
 function requestMove(piece, oldIndex, newIndex) {
   // save move as phrase
   let move = moveToStr(piece, oldIndex, newIndex);
-  console.log(move);
+
   // report to server
   socket.emit('requestMove', move);
 }
 
-function pieceIsOfColor(piece, color) {
-  return piece < 6 && color == Player.WHITE;
-}
-
-function ArrayContainsList(array, list) {
-  for (let i = 0; i < array.length; i++) {
-    if (array[i][0] == list[0] && array[i][1] == list[1])
-      return true;
-  }
-  return false;
-}
-
-function parseMoveToBoard(move) {
-  /* move example
-{
-  piece: 0,
-  oldIndex: [ 6, 4 ],
-  newIndex: [ 4, 4 ],
-  eatMove: false,
-  eatenPiece: -1
-}
-  */
-
-  let matrix = board;
-  matrix[move.oldIndex[0]][move.oldIndex[1]] = -1;
-  matrix[move.newIndex[0]][move.newIndex[1]] = move.piece;
-
-  return matrix;
+function gameIsLive() {
+  return board.length > 0;
 }
