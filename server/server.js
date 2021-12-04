@@ -86,6 +86,26 @@ class gameManager {
       availableMoves = this.getBishopMoves(move.piece, move.oldIndex);
     }
 
+    // KNIGHT
+    if (move.piece == Piece.n || move.piece == Piece.N) {
+      availableMoves = this.getKnightMoves(move.piece, move.oldIndex);
+    }
+
+    // ROOK
+    if (move.piece == Piece.r || move.piece == Piece.R) {
+      availableMoves = this.getRookMoves(move.piece, move.oldIndex);
+    }
+
+    // QUEEN
+    if (move.piece == Piece.q || move.piece == Piece.Q) {
+      availableMoves = this.getQueenMoves(move.piece, move.oldIndex);
+    } 
+
+    // KING
+    if (move.piece == Piece.k || move.piece == Piece.K) {
+      availableMoves = this.getKingMoves(move.piece, move.oldIndex);
+    }
+    console.log(availableMoves);
     if (arrayContainsList(availableMoves, move.newIndex)) {
       return true;
     }
@@ -175,16 +195,21 @@ class gameManager {
   getBishopMoves(piece, index) {
     let y = index[0]; let x = index[1];
     let availableMoves = [];
+    let board = this.board.slice();
+
+    if (getPieceColor(piece) == 'black') {
+      board.reverse();
+    }
 
     // y - i | x + i
     for (let i = 1; i < 8; i++) {
       if (y - i < 0 || x + i > 7) { // stop condition (out of bounds)
         break;
       }
-      if (this.board[y - i][x + i] == -1) {
+      if (board[y - i][x + i] == -1) {
         availableMoves.push([y - i, x + i]);
       }
-      else if (getPieceColor(piece) != getPieceColor(this.board[y - i][x + i])) {
+      else if (getPieceColor(piece) != getPieceColor(board[y - i][x + i])) {
         availableMoves.push([y - i, x + i]);
         break;
       }
@@ -198,10 +223,10 @@ class gameManager {
       if (y - i < 0 || x - i < 0) { // stop condition (out of bounds)
         break;
       }
-      if (this.board[y - i][x - i] == -1) {
+      if (board[y - i][x - i] == -1) {
         availableMoves.push([y - i, x - i]);
       }
-      else if (getPieceColor(piece) != getPieceColor(this.board[y - i][x - i])) {
+      else if (getPieceColor(piece) != getPieceColor(board[y - i][x - i])) {
         availableMoves.push([y - i, x - i]);
         break;
       }
@@ -215,10 +240,10 @@ class gameManager {
       if (y + i > 7 || x - i < 0) { // stop condition (out of bounds)
         break;
       }
-      if (this.board[y + i][x - i] == -1) {
+      if (board[y + i][x - i] == -1) {
         availableMoves.push([y + i, x - i]);
       }
-      else if (getPieceColor(piece) != getPieceColor(this.board[y + i][x - i])) {
+      else if (getPieceColor(piece) != getPieceColor(board[y + i][x - i])) {
         availableMoves.push([y + i, x - i]);
         break;
       }
@@ -232,15 +257,250 @@ class gameManager {
       if (y + i > 7 || x + i > 7) { // stop condition (out of bounds)
         break;
       }
-      if (this.board[y + i][x + i] == -1) {
+      if (board[y + i][x + i] == -1) {
         availableMoves.push([y + i, x + i]);
       }
-      else if (getPieceColor(piece) != getPieceColor(this.board[y + i][x + i])) {
+      else if (getPieceColor(piece) != getPieceColor(board[y + i][x + i])) {
         availableMoves.push([y + i, x + i]);
         break;
       }
       else {
         break;
+      }
+    }
+
+    return availableMoves;
+  }
+
+  getKnightMoves(piece, index) {
+    let y = index[0]; let x = index[1];
+    let availableMoves = [];
+    let board = this.board.slice();
+
+    if (getPieceColor(piece) == 'black') {
+      board.reverse();
+    }
+
+    // up 2
+    if (y - 2 >= 0) {
+      // right 1
+      if (x + 1 <= 7) {
+        // if square is empty or contains opponent piece
+        if ((board[y - 2][x + 1] != -1 && getPieceColor(piece) != getPieceColor(board[y - 2][x + 1])) || board[y - 2][x + 1] == -1) {
+          availableMoves.push([y - 2, x + 1]);
+        }
+      }
+      // left 1
+      if (x - 1 >= 0) {
+        // if square is empty or contains opponent piece
+        if ((board[y - 2][x - 1] != -1 && getPieceColor(piece) != getPieceColor(board[y - 2][x - 1])) || board[y - 2][x - 1] == -1) {
+          availableMoves.push([y - 2, x - 1]);
+        }
+      }
+    }
+
+    // up 1
+    if (y - 1 >= 0) {
+      // right 2
+      if (x + 2 <= 7) {
+        // if square is empty or contains opponent piece
+        if ((board[y - 1][x + 2] != -1 && getPieceColor(piece) != getPieceColor(board[y - 1][x + 2])) || board[y - 1][x + 2] == -1) {
+          availableMoves.push([y - 1, x + 2]);
+        }
+      }
+      // left 2
+      if (x - 2 >= 0) {
+        // if square is empty or contains opponent piece
+        if ((board[y - 1][x - 2] != -1 && getPieceColor(piece) != getPieceColor(board[y - 1][x - 2])) || board[y - 1][x - 2] == -1) {
+          availableMoves.push([y - 1, x - 2]);
+        }
+      }
+    }
+
+    // down 2
+    if (y + 2 <= 7) {
+      // right 1
+      if (x + 1 <= 7) {
+        // if square is empty or contains opponent piece
+        if ((board[y + 2][x + 1] != -1 && getPieceColor(piece) != getPieceColor(board[y + 2][x + 1])) || board[y + 2][x + 1] == -1) {
+          availableMoves.push([y + 2, x + 1]);
+        }
+      }
+      // left 1
+      if (x - 1 >= 0) {
+        // if square is empty or contains opponent piece
+        if ((board[y + 2][x - 1] != -1 && getPieceColor(piece) != getPieceColor(board[y + 2][x - 1])) || board[y + 2][x - 1] == -1) {
+          availableMoves.push([y + 2, x - 1]);
+        }
+      }
+    }
+
+    // down 1
+    if (y + 1 <= 7) {
+      // right 2
+      if (x + 2 <= 7) {
+        // if square is empty or contains opponent piece
+        if ((board[y + 1][x + 2] != -1 && getPieceColor(piece) != getPieceColor(board[y + 1][x + 2])) || board[y + 1][x + 2] == -1) {
+          availableMoves.push([y + 1, x + 2]);
+        }
+      }
+      // left 2
+      if (x - 2 >= 0) {
+        // if square is empty or contains opponent piece
+        if ((board[y + 1][x - 2] != -1 && getPieceColor(piece) != getPieceColor(board[y + 1][x - 2])) || board[y + 1][x - 2] == -1) {
+          availableMoves.push([y + 1, x - 2]);
+        }
+      }
+    }
+
+    return availableMoves;
+  }
+
+  getRookMoves(piece, index) {
+    let y = index[0]; let x = index[1];
+    let availableMoves = [];
+    let board = this.board.slice();
+
+    if (getPieceColor(piece) == 'black') {
+      board.reverse();
+    }
+
+    // up
+    for (let i = 1; i < 8; i++) {
+      if (y - i >= 0) {
+        console.log(board[y - i][x]);
+        if (board[y - i][x] == -1) {
+          availableMoves.push([y - i, x]);
+        } else if (board[y - i][x] != -1 && getPieceColor(piece) != getPieceColor(board[y - i][x])) {
+          availableMoves.push([y - i, x]);
+          break;
+        } else {
+          break;
+        }
+      }
+    }
+
+    // down
+    for (let i = 1; i < 8; i++) {
+      if (y + i <= 7) {
+        if (board[y + i][x] != -1 && getPieceColor(piece) != getPieceColor(board[y + i][x])) {
+          availableMoves.push([y + i, x]);
+          break;
+        } else if (board[y + i][x] == -1) {
+          availableMoves.push([y + i, x]);
+        } else {
+          break;
+        }
+      }
+    }
+
+    // right
+    for (let i = 1; i < 8; i++) {
+      if (x + i <= 7) {
+        if (board[y][x + i] != -1 && getPieceColor(piece) != getPieceColor(board[y][x + i])) {
+          availableMoves.push([y, x + i]);
+          break;
+        } else if (board[y][x + i] == -1) {
+          availableMoves.push([y, x + i]);
+        } else {
+          break;
+        }
+      }
+    }
+
+    // left
+    for (let i = 1; i < 8; i++) {
+      if (x - i >= 0) {
+        if (board[y][x - i] != -1 && getPieceColor(piece) != getPieceColor(board[y][x - i])) {
+          availableMoves.push([y, x - i]);
+          break;
+        } else if (board[y][x - i] == -1) {
+          availableMoves.push([y, x - i]);
+        } else {
+          break;
+        }
+      }
+    }
+
+    return availableMoves;
+  }
+
+  getQueenMoves(piece, index) {
+    let availableMoves = [];
+
+    availableMoves = this.getRookMoves(piece, index);
+    availableMoves = availableMoves.concat(this.getBishopMoves(piece, index));
+
+    return availableMoves;
+  }
+
+  getKingMoves(piece, index) {
+    let y = index[0]; let x = index[1];
+    let availableMoves = [];
+    let board = this.board.slice();
+    let potentialSquare = -1;
+
+    if (getPieceColor(piece) == 'black') {
+      board.reverse();
+    }
+
+    // up
+    if (y - 1 >= 0) {
+      potentialSquare = board[y - 1][x];
+      if (potentialSquare == -1 || (potentialSquare != -1 && getPieceColor(piece) != getPieceColor(potentialSquare))) {
+        availableMoves.push([y - 1, x]);
+      }
+      // left + up
+      if (x - 1 >= 0) {
+        potentialSquare = board[y - 1][x - 1];
+        if (potentialSquare == -1 || (potentialSquare != -1 && getPieceColor(piece) != getPieceColor(potentialSquare))) {
+          availableMoves.push([y - 1, x - 1]);
+        }
+      }
+      // right + up
+      if (x + 1 <= 7) {
+        potentialSquare = board[y - 1][x + 1];
+        if (potentialSquare == -1 || (potentialSquare != -1 && getPieceColor(piece) != getPieceColor(potentialSquare))) {
+          availableMoves.push([y - 1, x + 1]);
+        }
+      }
+    }
+    
+    // left
+    if (x - 1 >= 0) {
+      potentialSquare = board[y][x - 1];
+      if (potentialSquare == -1 || (potentialSquare != -1 && getPieceColor(piece) != getPieceColor(potentialSquare))) {
+        availableMoves.push([y, x - 1]);
+      }
+    }
+
+    // right
+    if (x + 1 <= 7) {
+      potentialSquare = board[y][x + 1];
+      if (potentialSquare == -1 || (potentialSquare != -1 && getPieceColor(piece) != getPieceColor(potentialSquare))) {
+        availableMoves.push([y, x + 1]);
+      }
+    }
+
+    // down
+    if (y + 1 <= 7) {
+      potentialSquare = board[y + 1][x];
+      if (potentialSquare == -1 || (potentialSquare != -1 && getPieceColor(piece) != getPieceColor(potentialSquare))) {
+        availableMoves.push([y + 1, x]);
+      }
+      // left + down
+      if (x - 1 >= 0) {
+        potentialSquare = board[y + 1][x - 1];
+        if (potentialSquare == -1 || (potentialSquare != -1 && getPieceColor(piece) != getPieceColor(potentialSquare))) {
+          availableMoves.push([y + 1, x - 1]);
+        }
+      }
+      // right + down
+      if (x + 1 <= 7) {
+        potentialSquare = board[y + 1][x + 1];
+        if (potentialSquare == -1 || (potentialSquare != -1 && getPieceColor(piece) != getPieceColor(potentialSquare))) {
+          availableMoves.push([y + 1, x + 1]);
+        }
       }
     }
 
