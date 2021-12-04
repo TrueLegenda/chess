@@ -43,39 +43,54 @@ class gameManager {
       if (this.turn % 2 == 0) { // if turn is not white
         return false;
       }
+      // verify piece location 
+      if (this.board[move.oldIndex[0]][move.oldIndex[1]] != move.piece) {
+        return false;
+      }
+
       if (getPieceColor(move.piece) != 'white')
         return false;
 
         // PAWN
       if (move.piece == Piece.P) {
         availableMoves = this.getPawnMoves(move.piece, move.oldIndex);
-        console.log(availableMoves); // TESTING PURPOSES
         if (arrayContainsList(availableMoves, move.newIndex)) {
           return true;
         }
       }
-
-      return false;      
     }
     // PLAYER IS BLACK
     else {
       if (this.turn % 2 != 0) {// if turn is not black
         return false;
       }
+      // verify piece location 
+      if (this.board.slice().reverse()[move.oldIndex[0]][move.oldIndex[1]] != move.piece) {
+        return false;
+      }
+
       if (getPieceColor(move.piece) != 'black')
         return false;
 
-        // PAWN
-        if (move.piece == Piece.p) { 
-          availableMoves = this.getPawnMoves(move.piece, move.oldIndex);
-          console.log(availableMoves); // TESTING PURPOSES
-          if (arrayContainsList(availableMoves, move.newIndex)) {
-            return true;
-          }
+      // PAWN
+      if (move.piece == Piece.p) { 
+        availableMoves = this.getPawnMoves(move.piece, move.oldIndex);
+        if (arrayContainsList(availableMoves, move.newIndex)) {
+          return true;
         }
-
-      return false;
+      }
     }
+
+    // BISHOP
+    if (move.piece == Piece.b || move.piece == Piece.B) {
+      availableMoves = this.getBishopMoves(move.piece, move.oldIndex);
+    }
+
+    if (arrayContainsList(availableMoves, move.newIndex)) {
+      return true;
+    }
+
+    return false;
   }
 
   doMove(socket, moveStr) {
@@ -155,6 +170,81 @@ class gameManager {
     }
 
     return moves;
+  }
+
+  getBishopMoves(piece, index) {
+    let y = index[0]; let x = index[1];
+    let availableMoves = [];
+
+    // y - i | x + i
+    for (let i = 1; i < 8; i++) {
+      if (y - i < 0 || x + i > 7) { // stop condition (out of bounds)
+        break;
+      }
+      if (this.board[y - i][x + i] == -1) {
+        availableMoves.push([y - i, x + i]);
+      }
+      else if (getPieceColor(piece) != getPieceColor(this.board[y - i][x + i])) {
+        availableMoves.push([y - i, x + i]);
+        break;
+      }
+      else {
+        break;
+      }
+    }
+
+    // y - i | x - i
+    for (let i = 1; i < 8; i++) {
+      if (y - i < 0 || x - i < 0) { // stop condition (out of bounds)
+        break;
+      }
+      if (this.board[y - i][x - i] == -1) {
+        availableMoves.push([y - i, x - i]);
+      }
+      else if (getPieceColor(piece) != getPieceColor(this.board[y - i][x - i])) {
+        availableMoves.push([y - i, x - i]);
+        break;
+      }
+      else {
+        break;
+      }
+    }
+
+    // y + i | x - i
+    for (let i = 1; i < 8; i++) {
+      if (y + i > 7 || x - i < 0) { // stop condition (out of bounds)
+        break;
+      }
+      if (this.board[y + i][x - i] == -1) {
+        availableMoves.push([y + i, x - i]);
+      }
+      else if (getPieceColor(piece) != getPieceColor(this.board[y + i][x - i])) {
+        availableMoves.push([y + i, x - i]);
+        break;
+      }
+      else {
+        break;
+      }
+    }
+
+    // y + i | x + i
+    for (let i = 1; i < 8; i++) {
+      if (y + i > 7 || x + i > 7) { // stop condition (out of bounds)
+        break;
+      }
+      if (this.board[y + i][x + i] == -1) {
+        availableMoves.push([y + i, x + i]);
+      }
+      else if (getPieceColor(piece) != getPieceColor(this.board[y + i][x + i])) {
+        availableMoves.push([y + i, x + i]);
+        break;
+      }
+      else {
+        break;
+      }
+    }
+
+    return availableMoves;
   }
 }
 
