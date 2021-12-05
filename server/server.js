@@ -5,6 +5,16 @@ class gameManager {
       this.turn = turn;
       this.moves = moves;
       this.board = [];
+      this.castlingConditions = {
+        whiteConditions: {
+          kingMoved: false,
+          rookMoved: false
+        },
+        blackConditions: {
+          kingMoved: false,
+          rookMoved: false
+        }
+      };
   }
 
   startMatch() {
@@ -43,6 +53,7 @@ class gameManager {
       if (this.turn % 2 == 0) { // if turn is not white
         return false;
       }
+      
       // verify piece location 
       if (this.board[move.oldIndex[0]][move.oldIndex[1]] != move.piece) {
         return false;
@@ -101,11 +112,12 @@ class gameManager {
       availableMoves = this.getQueenMoves(move.piece, move.oldIndex);
     } 
 
+
     // KING
     if (move.piece == Piece.k || move.piece == Piece.K) {
       availableMoves = this.getKingMoves(move.piece, move.oldIndex);
     }
-    console.log(availableMoves);
+    
     if (arrayContainsList(availableMoves, move.newIndex)) {
       return true;
     }
@@ -117,14 +129,12 @@ class gameManager {
     this.turn++;
     this.moves.push(moveStr);
 
-    let socketBoard = this.board;
+    this.addMoveToBoard(strToMove(moveStr));
 
-    if (socket == this.white) {
-      socketBoard = addMoveToBoard(this.board, strToMove(moveStr));
-      this.board = socketBoard;
-    } else {
-      socketBoard = addMoveToBoard(this.board.slice().reverse(), strToMove(moveStr));
-      this.board = socketBoard.slice().reverse();
+    let socketBoard = this.board.slice();
+
+    if (socket == this.black) {
+      socketBoard.reverse();
     }
 
     // report move
@@ -132,8 +142,24 @@ class gameManager {
       board: socketBoard,
     });
     this.getOpponent(socket).emit('chessMove', {
-      board: socketBoard.slice().reverse(),
+      board: socketBoard.reverse(),
     })
+  }
+
+  addMoveToBoard(move) {
+    let matrix = this.board.slice();
+    if (getPieceColor(move.piece) == 'black') {
+      matrix.reverse();
+    }
+
+    matrix[move.oldIndex[0]][move.oldIndex[1]] = -1;
+    matrix[move.newIndex[0]][move.newIndex[1]] = move.piece;
+
+    if (getPieceColor(move.piece) == 'black') {
+      matrix.reverse();
+    }
+
+    this.board = matrix;
   }
 
   getMin() {
@@ -161,7 +187,6 @@ class gameManager {
       }
     } else if (getPieceColor(piece) == 'black') {
       board.reverse();
-      console.log(board[6]);
       if (board[6][x] == Piece.p && y == 6) {
         if (board[y - 2][x] == -1) {
           moves.push([y - 2, x]);
@@ -368,7 +393,6 @@ class gameManager {
     // up
     for (let i = 1; i < 8; i++) {
       if (y - i >= 0) {
-        console.log(board[y - i][x]);
         if (board[y - i][x] == -1) {
           availableMoves.push([y - i, x]);
         } else if (board[y - i][x] != -1 && getPieceColor(piece) != getPieceColor(board[y - i][x])) {
@@ -504,6 +528,40 @@ class gameManager {
       }
     }
 
+    // castling
+    // QUEEN SIDE
+    if (getPieceColor(piece) == 'white') { // white
+      if (!this.castlingConditions.whiteConditions.kingMoved && !this.castlingConditions.whiteConditions.rookMoved) { // if relevant pieces haven't yet moved
+        if (this.board[y][x - 1] == -1 && this.board[y][x - 2] == -1 && this.board[y][x - 3] == -1) { // space between king and rook is clear
+          availableMoves.push([7, 1]);
+        }
+      }
+    }
+    if (getPieceColor(piece) == 'black') { // black
+      if (!this.castlingConditions.blackConditions.kingMoved && !this.castlingConditions.blackConditions.rookMoved) { // if relevant pieces haven't yet moved
+        if (this.board[y][x - 1] == -1 && this.board[y][x - 2] == -1 && this.board[y][x - 3] == -1) { // space between king and rook is clear
+          availableMoves.push([7, 1]);
+        }
+      }
+    }
+
+    // KING SIDE
+    if (getPieceColor(piece) == 'white') { // black
+      if (!this.castlingConditions.whiteConditions.kingMoved && !this.castlingConditions.whiteConditions.rookMoved) { // if relevant pieces haven't yet moved
+        if (this.board[y][x + 1] == -1 && this.board[y][x + 2] == -1) { // space between king and rook is clear
+          availableMoves.push([7, 6]);
+        }
+      }
+    }
+
+    if (getPieceColor(piece) == 'black') { // black
+      if (!this.castlingConditions.blackConditions.kingMoved && !this.castlingConditions.blackConditions.rookMoved) { // if relevant pieces haven't yet moved
+        if (this.board[y][x + 1] == -1 && this.board[y][x + 2] == -1) { // space between king and rook is clear
+          availableMoves.push([7, 6]);
+        }
+      }
+    }
+
     return availableMoves;
   }
 }
@@ -620,13 +678,6 @@ function strToMove(str) {
   return move;
 }
 
-function getFlippedMove(move) {
-  move.oldIndex[0] = 7 - move.oldIndex[0];
-  move.newIndex[0] = 7 - move.newIndex[0];
-
-  return move;
-}
-
 function fenToMatrix(fen) {
   let matrix = Array(8).fill(null).map(() => Array(8).fill(0));
   let y = 0; let x = 0;
@@ -651,14 +702,6 @@ function fenToMatrix(fen) {
       }
     }
   }
-
-  return matrix;
-}
-
-function addMoveToBoard(board, move) {
-  let matrix = board;
-  matrix[move.oldIndex[0]][move.oldIndex[1]] = -1;
-  matrix[move.newIndex[0]][move.newIndex[1]] = move.piece;
 
   return matrix;
 }
