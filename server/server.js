@@ -121,7 +121,7 @@ class gameManager {
     if (arrayContainsList(availableMoves, move.newIndex)) {
       return true;
     }
-
+    console.log(this.castlingConditions);
     return false;
   }
 
@@ -150,6 +150,69 @@ class gameManager {
     let matrix = this.board.slice();
     if (getPieceColor(move.piece) == 'black') {
       matrix.reverse();
+    }
+
+    // CASTLING
+    if (move.piece == Piece.K || move.piece == Piece.k) {
+      if (move.newIndex[0] == 7 && move.newIndex[1] == 1) { // QUEENSIDE
+        
+        if (getPieceColor(move.piece) == 'white') {
+          if (!this.castlingConditions.whiteConditions.kingMoved && !this.castlingConditions.whiteConditions.rookMoved) {
+            // update variables
+            this.castlingConditions.whiteConditions.kingMoved = true; this.castlingConditions.whiteConditions.rookMoved = true;
+
+            matrix[7][0] = -1; matrix[7][4] = -1;
+            matrix[7][1] = Piece.K; matrix[7][2] = Piece.R;
+            this.board = matrix; return;
+          }
+        }
+        else if (getPieceColor(move.piece) == 'black') {
+          if (!this.castlingConditions.blackConditions.kingMoved && !this.castlingConditions.blackConditions.rookMoved) {
+            // update variables
+            this.castlingConditions.blackConditions.kingMoved = true; this.castlingConditions.blackConditions.rookMoved = true;
+
+            matrix[7][0] = -1; matrix[7][4] = -1;
+            matrix[7][1] = Piece.k; matrix[7][2] = Piece.r;
+            matrix.reverse();
+            this.board = matrix; return;
+          }
+        }
+      }
+      if (move.newIndex[0] == 7 && move.newIndex[1] == 6) { // KINGSIDE
+        
+        if (getPieceColor(move.piece) == 'white') {
+          if (!this.castlingConditions.whiteConditions.kingMoved && !this.castlingConditions.whiteConditions.rookMoved) {
+            // update variables
+            this.castlingConditions.whiteConditions.kingMoved = true; this.castlingConditions.whiteConditions.rookMoved = true;
+
+            matrix[7][7] = -1; matrix[7][4] = -1;
+            matrix[7][6] = Piece.K; matrix[7][5] = Piece.R;
+            this.board = matrix; return;
+          }
+        }
+        else if (getPieceColor(move.piece) == 'black') {
+          if (!this.castlingConditions.blackConditions.kingMoved && !this.castlingConditions.blackConditions.rookMoved) {
+            // update variables
+            this.castlingConditions.blackConditions.kingMoved = true; this.castlingConditions.blackConditions.rookMoved = true;
+
+            matrix[7][7] = -1; matrix[7][4] = -1;
+            matrix[7][6] = Piece.k; matrix[7][5] = Piece.r;
+            matrix.reverse();
+            this.board = matrix; return;
+          }
+        }
+      }
+    }
+
+    if (move.piece == Piece.R) {
+      this.castlingConditions.whiteConditions.rookMoved = true;
+    } else if (move.piece == Piece.r) {
+      this.castlingConditions.blackConditions.rookMoved = true;
+    }
+    if (move.piece == Piece.K) {
+      this.castlingConditions.whiteConditions.rookMoved = true;
+    } else if (move.piece == Piece.k) {
+      this.castlingConditions.blackConditions.rookMoved = true;
     }
 
     matrix[move.oldIndex[0]][move.oldIndex[1]] = -1;
@@ -181,14 +244,14 @@ class gameManager {
     if (getPieceColor(piece) == 'white') {
       // if pawn hasn't been moved yet and can jump 2
       if (this.board[6][x] == Piece.P && y == 6) {
-        if (this.board[y - 2][x] == -1) {
+        if (this.board[y - 2][x] == -1 && this.board[y - 1][x] == -1) {
           moves.push([y - 2, x]);
         }
       }
     } else if (getPieceColor(piece) == 'black') {
       board.reverse();
       if (board[6][x] == Piece.p && y == 6) {
-        if (board[y - 2][x] == -1) {
+        if (board[y - 2][x] == -1 && board[y - 1][x] == -1) {
           moves.push([y - 2, x]);
         }
       }
@@ -532,14 +595,14 @@ class gameManager {
     // QUEEN SIDE
     if (getPieceColor(piece) == 'white') { // white
       if (!this.castlingConditions.whiteConditions.kingMoved && !this.castlingConditions.whiteConditions.rookMoved) { // if relevant pieces haven't yet moved
-        if (this.board[y][x - 1] == -1 && this.board[y][x - 2] == -1 && this.board[y][x - 3] == -1) { // space between king and rook is clear
+        if (board[y][x - 1] == -1 && board[y][x - 2] == -1 && board[y][x - 3] == -1) { // space between king and rook is clear
           availableMoves.push([7, 1]);
         }
       }
     }
     if (getPieceColor(piece) == 'black') { // black
       if (!this.castlingConditions.blackConditions.kingMoved && !this.castlingConditions.blackConditions.rookMoved) { // if relevant pieces haven't yet moved
-        if (this.board[y][x - 1] == -1 && this.board[y][x - 2] == -1 && this.board[y][x - 3] == -1) { // space between king and rook is clear
+        if (board[y][x - 1] == -1 && board[y][x - 2] == -1 && board[y][x - 3] == -1) { // space between king and rook is clear
           availableMoves.push([7, 1]);
         }
       }
@@ -548,7 +611,7 @@ class gameManager {
     // KING SIDE
     if (getPieceColor(piece) == 'white') { // black
       if (!this.castlingConditions.whiteConditions.kingMoved && !this.castlingConditions.whiteConditions.rookMoved) { // if relevant pieces haven't yet moved
-        if (this.board[y][x + 1] == -1 && this.board[y][x + 2] == -1) { // space between king and rook is clear
+        if (board[y][x + 1] == -1 && board[y][x + 2] == -1) { // space between king and rook is clear
           availableMoves.push([7, 6]);
         }
       }
@@ -556,7 +619,7 @@ class gameManager {
 
     if (getPieceColor(piece) == 'black') { // black
       if (!this.castlingConditions.blackConditions.kingMoved && !this.castlingConditions.blackConditions.rookMoved) { // if relevant pieces haven't yet moved
-        if (this.board[y][x + 1] == -1 && this.board[y][x + 2] == -1) { // space between king and rook is clear
+        if (board[y][x + 1] == -1 && board[y][x + 2] == -1) { // space between king and rook is clear
           availableMoves.push([7, 6]);
         }
       }
